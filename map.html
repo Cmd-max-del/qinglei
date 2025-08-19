@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>养殖场分布监控 - 禽疫智控</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="map.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- ECharts 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="china-map-data.js"></script>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <header class="header">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <i class="fas fa-dna"></i>
+                <span>禽疫智控</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="#dashboard" class="active">监控面板</a></li>
+                <li><a href="#about">关于我们</a></li>
+                <li><a href="#contact">联系我们</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <!-- 主要内容区域 -->
+    <main class="dashboard-main">
+        <!-- 面板标题 -->
+        <section class="dashboard-header">
+            <div class="container">
+                <h1><i class="fas fa-map-marked-alt"></i> 养殖场分布监控</h1>
+                <p>实时监控全国养殖场健康状态和疫病分布</p>
+            </div>
+        </section>
+
+        <!-- 统计面板 -->
+        <section class="stats-panel">
+            <div class="container">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon healthy">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="healthyCount">1,234</h3>
+                            <p>健康养殖场</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="warningCount">56</h3>
+                            <p>预警养殖场</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon danger">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="dangerCount">12</h3>
+                            <p>风险养殖场</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon total">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalCount">1,302</h3>
+                            <p>总养殖场数</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 地图和控制面板 -->
+        <section class="map-section">
+            <div class="container">
+                <div class="map-container">
+                    <!-- 控制面板 -->
+                    <div class="control-panel">
+                        <h3><i class="fas fa-sliders-h"></i> 筛选控制</h3>
+                        
+                        <div class="filter-group">
+                            <label>显示状态:</label>
+                            <div class="filter-options">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showHealthy" checked>
+                                    <span class="checkmark healthy"></span>
+                                    健康 (绿色)
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showWarning" checked>
+                                    <span class="checkmark warning"></span>
+                                    预警 (黄色)
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="showDanger" checked>
+                                    <span class="checkmark danger"></span>
+                                    风险 (红色)
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="regionSelect">省份筛选:</label>
+                            <select id="regionSelect">
+                                <option value="">全部省份</option>
+                                <option value="北京">北京</option>
+                                <option value="河北">河北</option>
+                                <option value="山东">山东</option>
+                                <option value="江苏">江苏</option>
+                                <option value="浙江">浙江</option>
+                                <option value="广东">广东</option>
+                                <option value="四川">四川</option>
+                                <option value="湖南">湖南</option>
+                                <option value="湖北">湖北</option>
+                                <option value="河南">河南</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label for="timeRange">时间范围:</label>
+                            <select id="timeRange">
+                                <option value="24h">最近24小时</option>
+                                <option value="7d" selected>最近7天</option>
+                                <option value="30d">最近30天</option>
+                                <option value="3m">最近3个月</option>
+                            </select>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn-primary" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> 刷新数据
+                            </button>
+                            <button class="btn-secondary" onclick="exportData()">
+                                <i class="fas fa-download"></i> 导出报告
+                            </button>
+                        </div>
+
+                        <!-- 图例 -->
+                        <div class="legend">
+                            <h4>图例说明</h4>
+                            <div class="legend-item">
+                                <span class="legend-color healthy"></span>
+                                <span>健康状态 - 无异常</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color warning"></span>
+                                <span>预警状态 - 需关注</span>
+                            </div>
+                            <div class="legend-item">
+                                <span class="legend-color danger"></span>
+                                <span>风险状态 - 需处理</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 地图显示区域 -->
+                    <div class="map-display">
+                        <div id="chinaMap" class="china-map"></div>
+                        
+                        <!-- 地图工具栏 -->
+                        <div class="map-toolbar">
+                            <button class="tool-btn" onclick="zoomIn()" title="放大">
+                                <i class="fas fa-search-plus"></i>
+                            </button>
+                            <button class="tool-btn" onclick="zoomOut()" title="缩小">
+                                <i class="fas fa-search-minus"></i>
+                            </button>
+                            <button class="tool-btn" onclick="resetZoom()" title="重置">
+                                <i class="fas fa-home"></i>
+                            </button>
+                            <button class="tool-btn" onclick="toggleFullscreen()" title="全屏">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 详细信息面板 -->
+        <section class="details-panel">
+            <div class="container">
+                <div class="details-grid">
+                    <!-- 选中养殖场信息 -->
+                    <div class="detail-card">
+                        <h3><i class="fas fa-info-circle"></i> 养殖场详情</h3>
+                        <div id="farmDetails" class="farm-details">
+                            <p class="no-selection">请点击地图上的养殖场查看详细信息</p>
+                        </div>
+                    </div>
+
+                    <!-- 近期检测记录 -->
+                    <div class="detail-card">
+                        <h3><i class="fas fa-clipboard-list"></i> 检测记录</h3>
+                        <div id="testRecords" class="test-records">
+                            <div class="record-item">
+                                <div class="record-date">2025-01-15</div>
+                                <div class="record-type">新城疫检测</div>
+                                <div class="record-result healthy">阴性</div>
+                            </div>
+                            <div class="record-item">
+                                <div class="record-date">2025-01-10</div>
+                                <div class="record-type">禽流感检测</div>
+                                <div class="record-result healthy">阴性</div>
+                            </div>
+                            <div class="record-item">
+                                <div class="record-date">2025-01-05</div>
+                                <div class="record-type">T细胞检测</div>
+                                <div class="record-result warning">异常</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 趋势图表 -->
+                    <div class="detail-card full-width">
+                        <h3><i class="fas fa-chart-line"></i> 检测趋势</h3>
+                        <div id="trendChart" class="trend-chart"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 实时警报 -->
+        <div id="alertPanel" class="alert-panel">
+            <div class="alert-header">
+                <h4><i class="fas fa-bell"></i> 实时警报</h4>
+                <button class="close-alert" onclick="closeAlert()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="alert-content">
+                <div class="alert-item danger">
+                    <div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
+                    <div class="alert-info">
+                        <div class="alert-title">紧急警报</div>
+                        <div class="alert-message">山东某养殖场检测到禽流感阳性，请立即处理</div>
+                        <div class="alert-time">2分钟前</div>
+                    </div>
+                </div>
+                <div class="alert-item warning">
+                    <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="alert-info">
+                        <div class="alert-title">预警提醒</div>
+                        <div class="alert-message">河北3个养殖场T细胞指标异常，建议加强监控</div>
+                        <div class="alert-time">10分钟前</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-brand">
+                        <i class="fas fa-dna"></i>
+                        <span>禽疫智控</span>
+                    </div>
+                    <p>专注家禽健康养殖技术创新，为行业提供智能化解决方案。</p>
+                </div>
+                <div class="footer-section">
+                    <h4>快速链接</h4>
+                    <ul>
+                        <li><a href="index.html">返回首页</a></li>
+                        <li><a href="#dashboard">监控面板</a></li>
+                        <li><a href="#contact">联系我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>技术支持</h4>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> +86 400-123-4567</li>
+                        <li><i class="fas fa-envelope"></i> support@qingyizhikong.com</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 禽疫智控. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="map.js"></script>
+</body>
+</html>
